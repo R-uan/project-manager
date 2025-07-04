@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import CASCADE
-from teams.models import Team, TeamMembership
 
 # Create your models here.
 
@@ -19,4 +18,4 @@ class ProjectTask(models.Model):
 
 class TaskAssignment(models.Model):
     task = models.ForeignKey(ProjectTask, on_delete=models.CASCADE, related_name='assigned_members') # get all assigned tasks (projectTask.assigned_members.all)
-    member = models.ForeignKey(TeamMembership, on_delete=models.SET_NULL, null=True, blank=True, related_name='assignments') # get all the tasks assigned to the member (teamMembership.assignments.all)
+    member = models.ForeignKey('teams.TeamMembership', on_delete=models.SET_NULL, null=True, blank=True, related_name='assignments') # get all the tasks assigned to the member (teamMembership.assignments.all)
