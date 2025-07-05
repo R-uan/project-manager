@@ -32,12 +32,12 @@ class TeamManagement(APIView):
             return Response({'error': 'Authentication required for this request'}, status=401)
 
         try:
-            team = Team.objects.get(id=team_id, owner=request.user)
+            team = Team.objects.get(id=team_id)
         except ObjectDoesNotExist:
             return Response({'error': 'Team not found'}, status=404)
 
-        # if not team.owner != request.user:
-        #     raise PermissionDenied("You do not own this team.")
+        if team.owner != request.user:
+            raise PermissionDenied("You do not own this team.")
 
         team.delete()
         return Response({ 'message': 'Team was successfully deleted' }, status=200)
