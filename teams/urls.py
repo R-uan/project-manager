@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import MyTeams, OwnedTeams, TeamManagement
+from .views import TeamOwnershipManagementView, TeamView
 
 urlpatterns = [
-    path('', MyTeams.as_view(), name='my_teams'),
-    path('owned', OwnedTeams.as_view(), name='owned_teams'),
-    path('<int:team_id>', TeamManagement.as_view(), name='membership_management')
+    path('', TeamView.as_view(), name='team_management'),
+    path('<int:team_id>', TeamView.as_view(), name='team_management_id'),
+    path('owned', TeamOwnershipManagementView.as_view(), name='owned_team_management'),
+    path('owned/<int:team_id>', TeamOwnershipManagementView.as_view(), name='owned_team_management_id')
 ]
