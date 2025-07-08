@@ -55,3 +55,4 @@ class AccountTests(APITestCase):
 
         response = self.client.post(reverse('account_management'), payload)
         self.assertEqual(response.status_code, 400)
+       

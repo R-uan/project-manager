@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models import CASCADE
+from teams.models import Team
 
 # Create your models here.
 
@@ -7,7 +8,12 @@ class Project(models.Model):
     title = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
     due_at = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+    private = models.BooleanField(default=False)
     # Project can have many teams working on it so no specific foreign key (?)
+
+class ProjectTeam(models.Model):
+    team = models.ForeignKey(Team, on_delete=CASCADE)
+    project = models.ForeignKey(Project, on_delete=CASCADE)
 
 class ProjectTask(models.Model):
     priority = models.IntegerField(default=0) # The higher, the more urgent

@@ -9,6 +9,7 @@ class Team(models.Model):
     private = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_teams')  # get all teams this user owns
+    projects = models.ManyToManyField('projects.Project', through='projects.ProjectTeam', related_name='teams')
     objects = models.Manager()
 
 
