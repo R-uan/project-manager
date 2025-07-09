@@ -1,27 +1,25 @@
 from django.db import models
 from accounts.models import User
-
+from organizations.models import Organization, OrganizationMember
+from projects.models import Project
 
 # Create your models here.
 
+# Organizations can have many teams, but a team can only be part of an organization
 class Team(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='teams')
     name = models.CharField(max_length=50)
-    private = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_teams')  # get all teams this user owns
-    projects = models.ManyToManyField('projects.Project', through='projects.ProjectTeam', related_name='teams')
+    projects = models.ManyToManyField('projects.Project', through='teams.TeamProject', related_name='teams' )
+
     objects = models.Manager()
 
-
+# Organization members can be part of many teams
 class TeamMembership(models.Model):
-    joined_at = models.DateTimeField(auto_now_add=True)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members')  # get all members from this team
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memberships')  # get all memberships from this user
-    role = models.CharField(choices=[('admin', 'Admin'), ('member', 'Member'), ('owner', 'Owner')], default='member')
-    objects = models.Manager()
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='member_teams')  # get all members from this team
+    member = models.ForeignKey(OrganizationMember, on_delete=models.CASCADE, related_name='team_members')  # get all memberships from this user
 
+# This is a relation table that links multiple projects to multiple teams and vice-versa
 class TeamProject(models.Model):
-    is_archives = models.BooleanField(default=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='shared_projects')  # gets all projects from this team
-    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='collaborating_teams')  # gets all teams working on this project
-    objects = models.Manager()
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='projects')
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='teams')

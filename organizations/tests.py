@@ -7,7 +7,7 @@ from teams.models import Team, TeamMembership, TeamProject
 
 # Create your tests here.
 
-class ProjectsModelsTest(TestCase):
+class OrganizationModelsTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email="me@gmail.com",
@@ -49,11 +49,12 @@ class ProjectsModelsTest(TestCase):
             project=self.project
         )
 
-    def test_query_project_teams(self):
-        teams = self.project.teams.all()
+    def test_query_organization_teams(self):
+        teams = self.organization.teams.all()
         self.assertEqual(len(teams), 1)
         self.assertIsInstance(teams[0], Team)
 
-    def test_query_project_tasks(self):
-        tasks = self.project.tasks.all()
-        self.assertEqual(len(tasks), 0)
+    def test_query_organization_projects(self):
+        projects = self.organization.projects.all()
+        self.assertEqual(len(projects), 1)
+        self.assertIsInstance(projects[0], Project)
