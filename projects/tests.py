@@ -7,6 +7,7 @@ from teams.models import Team, TeamMembership, TeamProject
 
 # Create your tests here.
 
+
 class ProjectsModelsTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -14,19 +15,17 @@ class ProjectsModelsTest(TestCase):
             username="User",
             password="Secr#t",
             first_name="Test",
-            last_name="User"
+            last_name="User",
         )
-        
+
         self.organization = Organization.objects.create(
-            name="Test Organization",
-            owner=self.user,
-            email="org@gmail.com"    
+            name="Test Organization", owner=self.user, email="org@gmail.com"
         )
 
         self.org_member = OrganizationMember.objects.create(
             organization=self.organization,
             member=self.user,
-            role='owner',
+            role="owner",
         )
 
         self.team = Team.objects.create(
@@ -37,17 +36,13 @@ class ProjectsModelsTest(TestCase):
         TeamMembership.objects.create(
             team=self.team,
             member=self.org_member,
-        )        
+        )
 
         self.project = Project.objects.create(
-            title="Silly Project",
-            organization=self.organization
+            title="Silly Project", organization=self.organization
         )
 
-        TeamProject.objects.create(
-            team=self.team,
-            project=self.project
-        )
+        TeamProject.objects.create(team=self.team, project=self.project)
 
     def test_query_project_teams(self):
         teams = self.project.teams.all()

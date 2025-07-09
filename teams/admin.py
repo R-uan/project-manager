@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Team, TeamMembership,TeamProject
+from .models import Team, TeamMembership, TeamProject
 
 # Register your models here.
 

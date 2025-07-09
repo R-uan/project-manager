@@ -5,6 +5,7 @@ from django.db import models
 
 from django.contrib.auth.models import BaseUserManager
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -15,6 +16,10 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+
 class User(AbstractUser):
     github = models.CharField(max_length=50, blank=True, null=True)
     objects = CustomUserManager()
+    organizations = models.ManyToManyField(
+        "organizations.Organization", through="organizations.OrganizationMember"
+    )
