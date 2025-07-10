@@ -7,6 +7,7 @@ from organizations.serializers import (
     OrganizationSerializer,
 )
 
+
 # Create your views here.
 class OrganizationManagerView(APIView):
     def get(self, request: Request, organization_id=None):

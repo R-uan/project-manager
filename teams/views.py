@@ -4,116 +4,67 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, NotAuthenticated
 from rest_framework.views import APIView
 from rest_framework.request import Request
+from organizations.models import Organization
 from projects.serializers import ProjectSerializer
 from .models import Team, TeamMembership
 from django.core.exceptions import ObjectDoesNotExist
 from .serializers import TeamSerializer, TeamCreateSerializer
+from rest_framework.decorators import api_view, permission_classes
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_team(request: Request):
+        validator = TeamCreateSerializer(request.data)
+        if not validator.is_valid:
+            return Response(validator.errors, 400)
 
-class TeamView(APIView):
-    permission_classes = []
+        organization_id = validator.validated_data["organization_id"]
 
-    #   Gets one team in case a `team_id` is given, otherwise gets all teams the authenticated user is part of
-    #   If a team is public, the user does not need to be authenticated to retrieve it.
-    #   The user needs to be authenticated and a member of the team to retrieve a private team.
-    def get(self, request: Request, team_id=None):
-        if team_id is not None:
-            try:
-                team = Team.objects.get(id=team_id)
-            except ObjectDoesNotExist:
-                raise NotFound({"error": "Team not found"})
+        try:
+            organization = Organization.objects.get(organization_id)
+        except ObjectDoesNotExist:
+            raise NotFound("Organization does not exist")
 
-            if team.private:
-                if not request.user.is_authenticated:
-                    raise NotAuthenticated({"error": "Authentication required"})
-                if not team.members.filter(user=request.user).exists():
-                    raise PermissionDenied(
-                        {"error": "You are not a member of this private team"}
-                    )
+        user_membership = organization.members.filter(member=request.user)
+        if user_membership.role != "admin" or "owner":
+            raise PermissionDenied("You're not allowed to create a team")
 
-            serializer = TeamSerializer(team)
-            return Response(serializer.data)
-        else:
+        team = Team.objects.create(
+            organization=organization,
+            name=validator.validated_data["name"],
+        )
+
+        return Response({"message": "Team created", "teamId": team.id})
+
+@api_view(['GET'])
+def get_team(request: Request, team_id):
+        team = Team.objects.get(id=team_id)
+        if team.organization.private:
             if not request.user.is_authenticated:
-                raise NotAuthenticated({"error": "Authentication required"})
-
-            teams = [membership.team for membership in request.user.memberships.all()]
-            serializer = TeamSerializer(teams, many=True)
-            return Response(serializer.data)
-
-
-class TeamOwnershipManagementView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request: Request, team_id=None):
-        if team_id is not None:
+                raise NotAuthenticated("Authentication needed")
             try:
-                team = Team.objects.get(id=team_id)
+                request.user.organizations.get(id=team.organization.id)
             except ObjectDoesNotExist:
-                raise NotFound({"error": "Team not found"})
+                raise PermissionDenied("You're not part of this organization")
 
-            if team.owner != request.user:
-                raise PermissionDenied({"error": "You are not the owner of this team"})
-
-            serializer = TeamSerializer(team)
-            return Response(serializer.data)
-        else:
-            teams = Team.objects.filter(owner=request.user)
-            serializer = TeamSerializer(teams, many=True)
-            return Response(serializer.data)
-
-    def post(self, request: Request):
-        serializer = TeamCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            team = Team.objects.create(
-                private=serializer.validated_data["private"],
-                name=serializer.validated_data["name"],
-                owner=request.user,
-            )
-
-            TeamMembership.objects.create(user=request.user, team=team, role="owner")
-
-            return Response({"message": "Team created", "team_id": team.id})
-        return Response(serializer.errors, status=400)
+        serializer = TeamSerializer(team)
+        return Response(serializer.data)
+    
+class TeamManagementView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request: Request, team_id):
         try:
             team = Team.objects.get(id=team_id)
         except ObjectDoesNotExist:
-            raise NotFound({"error": "Team not found"})
+            raise NotFound("Team does not exist")
+        try:
+            member = team.members.get(member=request.user)
+        except ObjectDoesNotExist:
+            raise PermissionDenied("Could not find membership")
 
-        if team.owner != request.user:
-            raise PermissionDenied({"error": "You are not the owner of this team"})
+        if member.role != "admin" or " owner":
+            raise PermissionDenied("You do not have permission to do this")
 
         team.delete()
         return Response({"message": "Team successfully deleted"})
-
-
-# api/teams/projects/<int:project_id>
-class TeamProjectsManager(APIView):
-    def get(self, request: Request, team_id, project_id=None):
-        try:
-            team = Team.objects.get(id=team_id)
-        except ObjectDoesNotExist:
-            raise NotFound("Team was not found")
-        if not project_id:
-            if request.user.is_authenticated:
-                if team.members.filter(user=request.user).exists():
-                    projects = team.projects.all()
-                    serializer = ProjectSerializer(projects, many=True)
-                    return Response(serializer.data)
-
-            projects = team.projects.filter(private=False)
-            serializer = ProjectSerializer(projects, many=True)
-            return Response(serializer.data)
-        else:
-            project = team.projects.get(id=project_id)
-            if project.private:
-                if not request.user.is_authenticated:
-                    raise PermissionDenied(
-                        "Authentication needed to see private project"
-                    )
-                if not team.members.filter(user=request.user).exists():
-                    raise PermissionDenied("Only members can see private projects")
-            serializer = ProjectSerializer(project)
-            return Response(serializer.data)

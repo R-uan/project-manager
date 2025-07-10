@@ -107,7 +107,7 @@ class OrganizationViewsTest(APITestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_get_organizations(self):
-        response = self.authenticated_client.get(reverse('get_organizations'))
+        response = self.authenticated_client.get(reverse("get_organizations"))
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 1)

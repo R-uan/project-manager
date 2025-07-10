@@ -17,3 +17,4 @@ class MembershipSerializer(serializers.ModelSerializer):
 class TeamCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=50)
     private = serializers.BooleanField(default=True)
+    organization_id = serializers.IntegerField()
