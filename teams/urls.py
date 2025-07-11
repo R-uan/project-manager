@@ -1,9 +1,12 @@
 from django.urls import path
 
-from teams.views import TeamManagementView, get_team, post_team
+from teams.views import TeamViewSet
+from rest_framework.routers import DefaultRouter
+
+team_create = TeamViewSet.as_view({'post': 'create'})
+team_management = TeamViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'})
 
 urlpatterns = [
-    path('', post_team, name="post_team"),
-    path('<int:team_id>', get_team, name="get_team"),   
-    path('<int:team_id>', TeamManagementView.as_view(), name="team_management") # delete, put
+    path('', team_create, name='post_team'),
+    path('<int:pk>', team_management, name='team_management')
 ]

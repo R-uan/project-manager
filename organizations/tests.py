@@ -72,7 +72,7 @@ class OrganizationViewsTest(APITestCase):
         )
 
         self.organization = Organization.objects.create(
-            name="Test Organization", owner=self.user, email="org@gmail.com"
+            name="Test Organization", owner=self.user, email="org@gmail.com", private=True
         )
 
         self.org_member = OrganizationMember.objects.create(
@@ -98,6 +98,15 @@ class OrganizationViewsTest(APITestCase):
         TeamProject.objects.create(team=self.team, project=self.project)
 
         self.authenticated_client = APIClient()
+        self.authenticated_client2 = APIClient()
+        self.authenticated_client2.force_authenticate(user=User.objects.create(
+            email="me2@gmail.com",
+            username="User2",
+            password="Secr#t",
+            first_name="Test2",
+            last_name="User2",
+                                                        
+        ))
         self.authenticated_client.force_authenticate(user=self.user)
         self.unauthenticated_client = APIClient()
 
@@ -111,3 +120,17 @@ class OrganizationViewsTest(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 1)
+
+    def test_get_organizations_members(self):
+        response = self.authenticated_client.get(reverse('get_org_members', kwargs={'pk': self.organization.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data), 1)
+            
+    def test_get_private_organization_members(self):
+        response = self.authenticated_client2.get(reverse('get_org_members', kwargs={'pk': self.organization.id}))
+        self.assertEqual(response.status_code, 403)
+         
+    def test_get_unauthorized_organization_members(self):
+        response = self.unauthenticated_client.get(reverse('get_org_members', kwargs={'pk': self.organization.id}))
+        self.assertEqual(response.status_code, 401)

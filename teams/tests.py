@@ -106,14 +106,22 @@ class TeamManagementView(APITestCase):
         self.unauthenticated_client = APIClient()
 
     def test_get_team(self):
-        response = self.authenticated_client.get(reverse('get_team', kwargs={'team_id': self.team.id}))
+        response = self.authenticated_client.get(reverse('team_management', kwargs={'pk': self.team.id}))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], self.team.name)
 
     def test_get_private_team(self):
-        response = self.unauthenticated_client.get(reverse('get_team', kwargs={'team_id':self.team.id}))
+        response = self.unauthenticated_client.get(reverse('team_management', kwargs={'pk':self.team.id}))
         self.assertEqual(response.status_code, 401)
 
     def test_get_private_team_2(self):
-        response = self.authenticated_client2.get(reverse('get_team', kwargs={'team_id':self.team.id}))
+        response = self.authenticated_client2.get(reverse('team_management', kwargs={'pk':self.team.id}))
         self.assertEqual(response.status_code, 403)
+
+    def test_delete_private_team(self):
+        response = self.unauthenticated_client.delete(reverse('team_management', kwargs={'pk':self.team.id}))
+        self.assertEqual(response.status_code, 401)
+
+    def test_delete_team(self):
+        response = self.authenticated_client.delete(reverse('team_management', kwargs={'pk': self.team.id}))
+        self.assertEqual(response.status_code, 204)

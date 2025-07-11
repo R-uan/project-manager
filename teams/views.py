@@ -1,70 +1,63 @@
+from django.db.models import ObjectDoesNotExist
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
+from rest_framework import viewsets, status
 from rest_framework.exceptions import NotFound, NotAuthenticated
-from rest_framework.views import APIView
-from rest_framework.request import Request
-from organizations.models import Organization
-from projects.serializers import ProjectSerializer
-from .models import Team, TeamMembership
-from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.response import Response
+from .models import Team, Organization
 from .serializers import TeamSerializer, TeamCreateSerializer
-from rest_framework.decorators import api_view, permission_classes
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def post_team(request: Request):
-        validator = TeamCreateSerializer(request.data)
-        if not validator.is_valid:
-            return Response(validator.errors, 400)
 
-        organization_id = validator.validated_data["organization_id"]
+class TeamViewSet(viewsets.ViewSet):
+    def create(self, request):
+        serializer = TeamCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        organization_id = serializer.validated_data["organization_id"]
 
         try:
-            organization = Organization.objects.get(organization_id)
+            organization = Organization.objects.get(id=organization_id)
         except ObjectDoesNotExist:
             raise NotFound("Organization does not exist")
 
-        user_membership = organization.members.filter(member=request.user)
-        if user_membership.role != "admin" or "owner":
+        membership = organization.members.filter(member=request.user).first()
+        if not membership or membership.role not in ["admin", "owner"]:
             raise PermissionDenied("You're not allowed to create a team")
 
         team = Team.objects.create(
             organization=organization,
-            name=validator.validated_data["name"],
+            name=serializer.validated_data["name"],
         )
 
-        return Response({"message": "Team created", "teamId": team.id})
+        return Response({"message": "Team created", "teamId": team.id}, status=status.HTTP_201_CREATED)
 
-@api_view(['GET'])
-def get_team(request: Request, team_id):
-        team = Team.objects.get(id=team_id)
+    def retrieve(self, request, pk=None):
+        try:
+            team = Team.objects.get(pk=pk)
+        except ObjectDoesNotExist:
+            raise NotFound("Team does not exist")
+
         if team.organization.private:
             if not request.user.is_authenticated:
                 raise NotAuthenticated("Authentication needed")
-            try:
-                request.user.organizations.get(id=team.organization.id)
-            except ObjectDoesNotExist:
+            if not request.user.organizations.filter(id=team.organization.id).exists():
                 raise PermissionDenied("You're not part of this organization")
 
         serializer = TeamSerializer(team)
         return Response(serializer.data)
-    
-class TeamManagementView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def delete(self, request: Request, team_id):
+    def destroy(self, request, pk=None):
+        if not request.user or not request.user.is_authenticated:
+            raise NotAuthenticated("Authentication needed")
+
         try:
-            team = Team.objects.get(id=team_id)
+            team = Team.objects.get(pk=pk)
         except ObjectDoesNotExist:
             raise NotFound("Team does not exist")
-        try:
-            member = team.members.get(member=request.user)
-        except ObjectDoesNotExist:
-            raise PermissionDenied("Could not find membership")
 
-        if member.role != "admin" or " owner":
+        membership = team.members.filter(member=request.user).first()
+        if not membership or membership.role not in ["admin", "owner"]:
             raise PermissionDenied("You do not have permission to do this")
 
         team.delete()
-        return Response({"message": "Team successfully deleted"})
+        return Response({"message": "Team successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
