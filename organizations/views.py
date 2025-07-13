@@ -1,4 +1,5 @@
 from django.db.models import Q, ObjectDoesNotExist
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.request import Request
@@ -123,3 +124,64 @@ def post_organization_member(request: Request, pk):
 
     return Response({'message': 'Member added'})
         
+class MemberManagementView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    def create(self, request: Request, orgPk):        
+        data = OrganizationAddMember(data=request.data)
+        if not data.is_valid():
+            return Response(data.errors, 400)
+        if data.validated_data['role'] not in ['admin', 'member']:
+            return Response("Invalid role assignment", 400)
+        
+        try:
+            org = Organization.objects.get(id=orgPk)
+        except ObjectDoesNotExist:
+            raise NotFound({'error': 'Organization was not found'})
+
+        try:
+            member = org.members.get(id=request.user.id)
+        except ObjectDoesNotExist:
+            raise PermissionDenied("You can't do that")
+
+        if member.role not in ["admin", "owner"]:
+            raise PermissionDenied("You can't do that")
+
+        if data.validated_data['role'] == "admin" and member.role != 'owner':
+            raise PermissionDenied("You can't assign that role")
+
+        try:
+            new_member = User.objects.get(id=data.validated_data['member_pk'])
+        except ObjectDoesNotExist:
+            raise NotFound("New member was not found")
+    
+        OrganizationMember.objects.create(
+            organization=org,
+            member=new_member,
+            role=data.validated_data['role'],
+        )
+
+        return Response({'message': 'Member added'})
+
+    def destroy(self, request: Request, orgPk, memberPk):
+        try:
+            org = Organization.objects.get(id=orgPk)
+        except ObjectDoesNotExist:
+            raise NotFound({'error': 'Organization was not found'})
+
+        try:
+            user = User.objects.get(id=memberPk)
+            member = org.members.get(member=user)
+        except ObjectDoesNotExist:
+            raise NotFound({'error': 'Could not find target member'})
+
+        try:
+            actor = org.members.get(member=request.user)
+        except ObjectDoesNotExist:
+            raise PermissionDenied({'error': 'You are not allowed to do that'})
+
+        if actor.role not in ["owner", "admin"]:
+            raise PermissionDenied({'error': 'You are not allowed to do that'})
+
+        member.delete()
+        return Response({'message': 'Member was removed from the organization'})
+ 

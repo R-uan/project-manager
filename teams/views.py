@@ -29,7 +29,10 @@ class TeamViewSet(viewsets.ViewSet):
             name=serializer.validated_data["name"],
         )
 
-        return Response({"message": "Team created", "teamId": team.id}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Team created", "teamId": team.id},
+            status=status.HTTP_201_CREATED,
+        )
 
     def retrieve(self, request, pk=None):
         try:
@@ -60,4 +63,6 @@ class TeamViewSet(viewsets.ViewSet):
             raise PermissionDenied("You do not have permission to do this")
 
         team.delete()
-        return Response({"message": "Team successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"message": "Team successfully deleted"}, status=status.HTTP_204_NO_CONTENT
+        )

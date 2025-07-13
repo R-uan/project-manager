@@ -23,6 +23,14 @@ class AccountsModelsTest(TestCase):
             last_name="Test",
         )
 
+        self.user3 = User.objects.create_user(
+            email="me3@gmail.com",
+            username="User 3",
+            password="Secr#t",
+            first_name="User",
+            last_name="Test",
+        )
+
         self.organization = Organization.objects.create(
             name="Test Organization", owner=self.user, email="org@gmail.com"
         )

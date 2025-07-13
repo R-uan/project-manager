@@ -8,6 +8,7 @@ from accounts.models import User
 
 # Create your tests here.
 
+
 class TeamModelsTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -55,7 +56,6 @@ class TeamModelsTest(TestCase):
         self.assertIsInstance(members[0], OrganizationMember)
 
 
-
 class TeamManagementView(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -67,7 +67,10 @@ class TeamManagementView(APITestCase):
         )
 
         self.organization = Organization.objects.create(
-            name="Test Organization", owner=self.user, email="org@gmail.com", private=True
+            name="Test Organization",
+            owner=self.user,
+            email="org@gmail.com",
+            private=True,
         )
 
         self.org_member = OrganizationMember.objects.create(
@@ -91,37 +94,48 @@ class TeamManagementView(APITestCase):
         )
 
         TeamProject.objects.create(team=self.team, project=self.project)
-        
+
         self.authenticated_client = APIClient()
         self.authenticated_client.force_authenticate(user=self.user)
         self.authenticated_client2 = APIClient()
-        self.authenticated_client2.force_authenticate(user=User.objects.create(
-            email="me2@gmail.com",
-            username="User2",
-            password="Secr#t",
-            first_name="Test2",
-            last_name="User2",
-                                                        
-        ))
+        self.authenticated_client2.force_authenticate(
+            user=User.objects.create(
+                email="me2@gmail.com",
+                username="User2",
+                password="Secr#t",
+                first_name="Test2",
+                last_name="User2",
+            )
+        )
         self.unauthenticated_client = APIClient()
 
     def test_get_team(self):
-        response = self.authenticated_client.get(reverse('team_management', kwargs={'pk': self.team.id}))
+        response = self.authenticated_client.get(
+            reverse("team_management", kwargs={"pk": self.team.id})
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['name'], self.team.name)
+        self.assertEqual(response.data["name"], self.team.name)
 
     def test_get_private_team(self):
-        response = self.unauthenticated_client.get(reverse('team_management', kwargs={'pk':self.team.id}))
+        response = self.unauthenticated_client.get(
+            reverse("team_management", kwargs={"pk": self.team.id})
+        )
         self.assertEqual(response.status_code, 401)
 
     def test_get_private_team_2(self):
-        response = self.authenticated_client2.get(reverse('team_management', kwargs={'pk':self.team.id}))
+        response = self.authenticated_client2.get(
+            reverse("team_management", kwargs={"pk": self.team.id})
+        )
         self.assertEqual(response.status_code, 403)
 
     def test_delete_private_team(self):
-        response = self.unauthenticated_client.delete(reverse('team_management', kwargs={'pk':self.team.id}))
+        response = self.unauthenticated_client.delete(
+            reverse("team_management", kwargs={"pk": self.team.id})
+        )
         self.assertEqual(response.status_code, 401)
 
     def test_delete_team(self):
-        response = self.authenticated_client.delete(reverse('team_management', kwargs={'pk': self.team.id}))
+        response = self.authenticated_client.delete(
+            reverse("team_management", kwargs={"pk": self.team.id})
+        )
         self.assertEqual(response.status_code, 204)
