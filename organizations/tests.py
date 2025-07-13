@@ -96,17 +96,17 @@ class OrganizationViewsTest(APITestCase):
         )
 
         TeamProject.objects.create(team=self.team, project=self.project)
-
-        self.authenticated_client = APIClient()
-        self.authenticated_client2 = APIClient()
-        self.authenticated_client2.force_authenticate(user=User.objects.create(
+        self.user2 = User.objects.create(
             email="me2@gmail.com",
             username="User2",
             password="Secr#t",
             first_name="Test2",
             last_name="User2",
-                                                        
-        ))
+        )
+        
+        self.authenticated_client = APIClient()
+        self.authenticated_client2 = APIClient()
+        self.authenticated_client2.force_authenticate(user=self.user2)
         self.authenticated_client.force_authenticate(user=self.user)
         self.unauthenticated_client = APIClient()
 
@@ -134,3 +134,10 @@ class OrganizationViewsTest(APITestCase):
     def test_get_unauthorized_organization_members(self):
         response = self.unauthenticated_client.get(reverse('get_org_members', kwargs={'pk': self.organization.id}))
         self.assertEqual(response.status_code, 401)
+
+    def test_post_member(self):
+        payload = {'member_pk': self.user2.id, 'role': 'member'}
+        response = self.authenticated_client.post(reverse('post_member', kwargs={'pk': self.organization.id}), payload)
+        print(response.data)
+        self.assertEqual(response.status_code, 200)        
+

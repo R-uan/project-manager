@@ -21,3 +21,7 @@ class OrganizationCreationRequest(serializers.Serializer):
     website = serializers.CharField(max_length=100, default="")
     linkedin = serializers.CharField(max_length=100, default="")
     email = serializers.EmailField(max_length=254, default="")
+
+class OrganizationAddMember(serializers.Serializer):
+    member_pk = serializers.CharField()
+    role = serializers.CharField(default="member")
