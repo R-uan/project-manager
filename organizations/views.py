@@ -15,7 +15,8 @@ from organizations.serializers import (
 from projects.serializers import ProjectSerializer
 
 
-# Create your views here.
+# api/organizations
+# api/organizations/<int:org_pk>
 class OrganizationView(viewsets.ViewSet):
     def get(self, request: Request, organization_id=None):
         if not organization_id:
@@ -76,7 +77,8 @@ class OrganizationView(viewsets.ViewSet):
         org.delete()
         return Response({"message": "The organization was deleted"})
 
-
+# api/organizations/<int:org_pk>/members
+# api/organizations/<int:org_pk>/members/<int:member_pk>
 class OrganizationMemberManagementView(viewsets.ViewSet):
     permission_classes = []
 
@@ -167,9 +169,10 @@ class OrganizationMemberManagementView(viewsets.ViewSet):
         member.delete()
         return Response({'message': 'Member was removed from the organization'})
 
-
+# api/organizations/<int:org_pk>/projects
+# api/organizations/<int:org_pk>/projects/<int:project_pk>
 class OrganizationProjectManagementView(viewsets.ViewSet):
-    def retrieval(self, request: Request, org_pk, project_pk=None):
+    def find(self, request: Request, org_pk, project_pk=None):
         authenticated = request.user.is_authenticated
 
         try:

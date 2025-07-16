@@ -1,7 +1,8 @@
 from django.test import TestCase
 from accounts.models import User
 from organizations.models import Organization, OrganizationMember
-from projects.models import Project
+from projects.models import Project, ProjectAssignment
+
 
 class AccountsModelsTest(TestCase):
     def setUp(self):
@@ -51,8 +52,14 @@ class AccountsModelsTest(TestCase):
             organization=self.organization2, member=self.user, role="member"
         )
 
+
         self.project = Project.objects.create(
             title="Silly Project", organization=self.organization
+        )
+
+        ProjectAssignment.objects.create(
+            project=self.project,
+            member=self.org_member
         )
 
     def test_get_user_owned_orgs(self):
@@ -60,12 +67,13 @@ class AccountsModelsTest(TestCase):
         self.assertEqual(len(orgs), 1)
         self.assertIsInstance(orgs[0], Organization)
 
-    def test_get_user_my_memberships(self):
-        orgs = self.user.memberships.all()
-        self.assertEqual(len(orgs), 2)
-        self.assertIsInstance(orgs[0], OrganizationMember)
+    def test_get_assigned_projects(self):
+        user_membership = self.user.organizations.get(organization=self.organization)
+        projects = user_membership.projects.all()
+        self.assertEqual(len(projects), 1)
+        self.assertIsInstance(projects[0], Project)
 
     def test_get_user_organizations(self):
         orgs = self.user.organizations.all()
         self.assertEqual(len(orgs), 2)
-        self.assertIsInstance(orgs[0], Organization)
+        self.assertIsInstance(orgs[0], OrganizationMember)

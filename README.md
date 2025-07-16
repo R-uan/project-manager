@@ -31,5 +31,11 @@ The goal of this specific repository is to get used to Python's syntax as well a
 - [x] Get/Add/Remove Organization Members
 - [x] Get Organization Projects
 
+#### Projects
+- [ ] Create Projects
+- [ ] Delete Projects
+- [ ] Assign Org Member to Project
+- [ ] Update information
+
 #### Teams
 Should remove teams and assign members to projects directly
