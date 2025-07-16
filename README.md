@@ -12,3 +12,24 @@ The goal of this specific repository is to get used to Python's syntax as well a
 - [x] Django Rest Framework (Serializers, API)
 - [x] Django Authentication (Jwt)
 - [x] Django Testing Framework
+
+
+### Project Views Checklist
+
+#### Authentication
+- [x] Generate Token
+- [x] Refresh Token
+
+#### Accounts
+- [x] Create Account
+- [ ] Get Account Details
+- [x] Get (Owned) Organizations
+
+#### Organizations
+- [x] Create Organizations
+- [x] Get Organization Details
+- [x] Get/Add/Remove Organization Members
+- [x] Get Organization Projects
+
+#### Teams
+Should remove teams and assign members to projects directly

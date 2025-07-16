@@ -4,7 +4,7 @@ from rest_framework.test import APIClient, APITestCase
 from accounts.models import User
 from organizations.models import Organization, OrganizationMember
 from projects.models import Project
-from teams.models import Team, TeamMembership, TeamProject
+
 
 # Create your tests here.
 
@@ -29,26 +29,10 @@ class OrganizationModelsTest(TestCase):
             role="owner",
         )
 
-        self.team = Team.objects.create(
-            organization=self.organization,
-            name="Silly Team",
-        )
-
-        TeamMembership.objects.create(
-            team=self.team,
-            member=self.org_member,
-        )
-
         self.project = Project.objects.create(
             title="Silly Project", organization=self.organization
         )
 
-        TeamProject.objects.create(team=self.team, project=self.project)
-
-    def test_query_organization_teams(self):
-        teams = self.organization.teams.all()
-        self.assertEqual(len(teams), 1)
-        self.assertIsInstance(teams[0], Team)
 
     def test_query_organization_projects(self):
         projects = self.organization.projects.all()
@@ -106,26 +90,9 @@ class OrganizationViewsTest(APITestCase):
             role="member",
         )
 
-        self.team = Team.objects.create(
-            organization=self.organization,
-            name="Silly Team",
-        )
-
-        TeamMembership.objects.create(
-            team=self.team,
-            member=self.orgMember
-        )
-
-        TeamMembership.objects.create(
-            team=self.team,
-            member=self.orgMemberTwo,
-        )
-
         self.project = Project.objects.create(
             title="Silly Project", organization=self.organization
         )
-
-        TeamProject.objects.create(team=self.team, project=self.project)
 
         self.authenticatedClient = APIClient()
         self.authenticatedClientTwo = APIClient()
@@ -135,50 +102,50 @@ class OrganizationViewsTest(APITestCase):
 
     def test_post_organization(self):
         payload = {"name": "Testing Org", "private": False, "email": "capybara@org.com"}
-        response = self.authenticatedClient.post(reverse("post_organization"), payload)
+        response = self.authenticatedClient.post(reverse("organizationView"), payload)
         self.assertEqual(response.status_code, 200)
 
     def test_get_organizations(self):
-        response = self.authenticatedClient.get(reverse("get_organizations"))
+        response = self.authenticatedClient.get(reverse("organizationView"))
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 1)
 
     def test_get_organizations_members(self):
-        response = self.authenticatedClient.get(
-            reverse("get_org_members", kwargs={"pk": self.organization.id})
-        )
+        response = self.authenticatedClient.get(reverse("memberManagement", kwargs={"org_pk": self.organization.id}))
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 2)
 
     def test_get_private_organization_members(self):
-        response = self.authenticatedClientTwo.get(
-            reverse("get_org_members", kwargs={"pk": self.organization.id})
-        )
+        response = self.authenticatedClientTwo.get(reverse("memberManagement", kwargs={"org_pk": self.organization.id}))
         self.assertEqual(response.status_code, 403)
 
     def test_get_unauthorized_organization_members(self):
-        response = self.unauthenticatedClient.get(
-            reverse("get_org_members", kwargs={"pk": self.organization.id})
-        )
+        response = self.unauthenticatedClient.get(reverse("memberManagement", kwargs={"org_pk": self.organization.id}))
         self.assertEqual(response.status_code, 401)
 
     def test_post_member(self):
         payload = {"member_pk": self.userTwo.id, "role": "member"}
-        response = self.authenticatedClient.post(
-            reverse("addMember", kwargs={"orgPk": self.organization.id}), payload
-        )
+        response = self.authenticatedClient.post(reverse("memberManagement", kwargs={"org_pk": self.organization.id}), payload)
         self.assertEqual(response.status_code, 200)
 
     def test_unauthorized_delete_member(self):
-        response = self.unauthenticatedClient.delete(reverse("memberManagement", kwargs={'orgPk': self.organization.id, 'memberPk': self.userTwo.id}))
+        response = self.unauthenticatedClient.delete(reverse("memberManagementId", kwargs={'org_pk': self.organization.id, 'member_pk': self.userTwo.id}))
         self.assertEqual(response.status_code, 401)
 
     def test_delete_member(self):
-        response = self.authenticatedClient.delete(reverse("memberManagement", kwargs={'orgPk': self.organization.id, 'memberPk': self.userThree.id}))
+        response = self.authenticatedClient.delete(reverse("memberManagementId", kwargs={'org_pk': self.organization.id, 'member_pk': self.userThree.id}))
         self.assertEqual(response.status_code, 200)
 
     def test_member_delete_member(self):
-        response = self.authenticatedClientTwo.delete(reverse("memberManagement", kwargs={'orgPk': self.organization.id, 'memberPk': self.user.id}))
+        response = self.authenticatedClientTwo.delete(reverse("memberManagementId", kwargs={'org_pk': self.organization.id, 'member_pk': self.user.id}))
         self.assertEqual(response.status_code, 403)
+
+    def test_get_projects(self):
+        response = self.authenticatedClient.get(reverse("projectManagement", kwargs={"org_pk": self.organization.id}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_project_by_id(self):
+        response = self.authenticatedClient.get(reverse("projectManagementId", kwargs={"org_pk": self.organization.id, "project_pk": self.project.id}))
+        self.assertEqual(response.status_code, 200)

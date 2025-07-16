@@ -20,6 +20,3 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractUser):
     github = models.CharField(max_length=50, blank=True, null=True)
     objects = CustomUserManager()
-    organizations = models.ManyToManyField(
-        "organizations.Organization", through="organizations.OrganizationMember"
-    )

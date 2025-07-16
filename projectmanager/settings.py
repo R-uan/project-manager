@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     "organizations",
     "projects",
     "accounts",
-    "teams",
 ]
 
 REST_FRAMEWORK = {
