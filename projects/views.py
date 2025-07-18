@@ -1,4 +1,5 @@
 from django.core.exceptions import BadRequest, ObjectDoesNotExist
+from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.exceptions import NotAuthenticated, NotFound, PermissionDenied
 from rest_framework.request import Request
@@ -6,7 +7,7 @@ from rest_framework.response import Response
 
 from organizations.models import Organization
 from projects.models import Project, ProjectAssignment
-from projects.serializers import NewProjectSerializer, ProjectSerializer
+from projects.serializers import NewProjectSerializer, ProjectSerializer, UpdateProjectSerializer
 
 
 class ProjectManagerView(viewsets.ViewSet):
@@ -22,6 +23,8 @@ class ProjectManagerView(viewsets.ViewSet):
             organization = Organization.objects.get(id=org_pk)
         except ObjectDoesNotExist:
             raise NotFound({"error": "Organization was not found"})
+        except IntegrityError:
+            raise BadRequest({"error": "Organization Id invalid"})
 
         try:
             member = organization.members.get(member=request.user)
@@ -31,6 +34,7 @@ class ProjectManagerView(viewsets.ViewSet):
             raise PermissionDenied({"error": "You're not allowed to do that"})
 
         project = Project.objects.create(
+            organization=organization,
             title=data.validated_data["title"],
             secret=data.validated_data["secret"],
             private=data.validated_data["private"],
@@ -52,7 +56,7 @@ class ProjectManagerView(viewsets.ViewSet):
                 org_member = project.organization.members.get(member=request.user)
             except ObjectDoesNotExist:
                 raise PermissionDenied({"error": "You can't see this"})
-            if project.secret and not project.assignees.filter(member=org_member).exists():
+            if project.secret and not project.assignees.filter(member=request.user).exists():
                 raise PermissionDenied({"error": "You can't see this"})
 
         serializer = ProjectSerializer(project)
@@ -82,6 +86,10 @@ class ProjectManagerView(viewsets.ViewSet):
         if not request.user.is_authenticated:
             raise NotAuthenticated({"error": "Authentication needed"})
 
+        serialize = UpdateProjectSerializer(data=request.data)
+        if not serialize.is_valid(): raise BadRequest(serialize.errors)
+        data = serialize.validated_data
+
         try:
             project = Project.objects.get(id=project_pk)
         except ObjectDoesNotExist:
@@ -95,3 +103,14 @@ class ProjectManagerView(viewsets.ViewSet):
         if member.role not in ["owner", "admin"]:
             raise PermissionDenied({"error": "You are not allowed to do that"})
 
+        if data["title"]:
+            project.title = data["title"]
+        if data["secret"]:
+            project.secret = data["secret"]
+        if data["private"]:
+            project.private = data["private"]
+        if project["status"]:
+            project.status = data["status"]
+
+        project.save()
+        return Response({"message": f"Project {project.id} updated"})

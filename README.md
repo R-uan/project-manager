@@ -32,8 +32,8 @@ The goal of this specific repository is to get used to Python's syntax as well a
 - [x] Get Organization Projects
 
 #### Projects
-- [ ] Create Projects
-- [ ] Delete Projects
+- [x] Create Projects
+- [x] Delete Projects
 - [ ] Assign Org Member to Project
 - [ ] Update information
 

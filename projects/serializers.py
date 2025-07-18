@@ -14,3 +14,9 @@ class NewProjectSerializer(serializers.Serializer):
     secret = serializers.BooleanField(default=False)
     private = serializers.BooleanField(default=True)
     status = serializers.IntegerField(default=0)
+
+class UpdateProjectSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=100, allow_null=True, default=None)
+    secret = serializers.BooleanField(allow_null=True, default=None)
+    private = serializers.BooleanField(allow_null=True, default=None)
+    status = serializers.IntegerField(allow_null=True,   default=None)
