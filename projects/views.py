@@ -2,12 +2,13 @@ from django.core.exceptions import BadRequest, ObjectDoesNotExist
 from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.exceptions import NotAuthenticated, NotFound, PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from organizations.models import Organization
 from projects.models import Project, ProjectAssignment
-from projects.serializers import NewProjectSerializer, ProjectSerializer, UpdateProjectSerializer
+from projects.serializers import NewProjectSerializer, ProjectSerializer, UpdateProjectSerializer, AssignProjectMember
 
 
 class ProjectManagerView(viewsets.ViewSet):
@@ -114,3 +115,68 @@ class ProjectManagerView(viewsets.ViewSet):
 
         project.save()
         return Response({"message": f"Project {project.id} updated"})
+
+class ProjectAssigneesView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    def assign_member(self, request: Request, project_pk):
+        serialize = AssignProjectMember(data=request.data)
+        if not serialize.is_valid(): raise BadRequest(serialize.errors)
+        body = serialize.validated_data
+
+        try:
+            project = Project.objects.get(id=project_pk)
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Project was not found"})
+
+        try:
+            user = project.organization.members.get(member=request.user)
+        except ObjectDoesNotExist:
+            raise PermissionDenied({"error": "You are not allowed to do that"})
+
+        if user.role not in ["owner", "admin"]:
+            raise PermissionDenied({"error": "You are not allowed to do that"})
+
+        try:
+            member = project.organization.members.get(id=body["member_pk"])
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Member was not found"})
+
+        ProjectAssignment.objects.create(
+            member=member,
+            project=project
+        )
+
+        return Response({"message": "Member assigned to project"})
+
+
+    def unassign_member(self, request: Request, project_pk):
+        serialize = AssignProjectMember(data=request.data)
+        if not serialize.is_valid(): raise BadRequest(serialize.errors)
+        body = serialize.validated_data
+
+        try:
+            project = Project.objects.get(id=project_pk)
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Project was not found"})
+
+        try:
+            user = project.organization.members.get(member=request.user)
+        except ObjectDoesNotExist:
+            raise PermissionDenied({"error": "You are not allowed to do that"})
+
+        if user.role not in ["owner", "admin"]:
+            raise PermissionDenied({"error": "You are not allowed to do that"})
+
+        try:
+            member = project.organization.members.get(id=body["member_pk"])
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Member was not found"})
+
+        try:
+            assignment = project.assignees.get(member=member)
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Member is not assigned to project"})
+
+        assignment.delete()
+
+        return Response({"message": "Member unassigned from project"})
