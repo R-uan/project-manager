@@ -20,11 +20,18 @@ class OrganizationMemberSerializer(serializers.ModelSerializer):
 class OrganizationCreationRequest(serializers.Serializer):
     name = serializers.CharField(max_length=30)
     private = serializers.BooleanField(default=False)
-    website = serializers.CharField(max_length=100, default="")
-    linkedin = serializers.CharField(max_length=100, default="")
-    email = serializers.EmailField(max_length=254, default="")
+    website = serializers.CharField(max_length=100, default="", allow_null=True)
+    linkedin = serializers.CharField(max_length=100, default="", allow_null=True)
+    email = serializers.EmailField(max_length=254, default="", allow_null=True)
+
+class OrganizationUpdateRequest(serializers.Serializer):
+    private = serializers.BooleanField(default=None, allow_null=True)
+    name = serializers.CharField(max_length=30, default=None, allow_null=True)
+    website = serializers.CharField(max_length=100, default=None, allow_null=True)
+    linkedin = serializers.CharField(max_length=100, default=None, allow_null=True)
+    email = serializers.EmailField(max_length=254, default=None, allow_null=True)
 
 
 class OrganizationAddMember(serializers.Serializer):
     member_pk = serializers.CharField()
-    role = serializers.CharField(default="member")
+    role = serializers.CharField(default="member", allow_null=True)

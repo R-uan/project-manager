@@ -24,18 +24,16 @@ The goal of this specific repository is to get used to Python's syntax as well a
 - [x] Create Account
 - [ ] Get Account Details
 - [x] Get (Owned) Organizations
+- [ ] Update Details (email, name, GitHub, password)
 
 #### Organizations
-- [x] Create Organizations
-- [x] Get Organization Details
-- [x] Get/Add/Remove Organization Members
-- [x] Get Organization Projects
+- [x] Projects: Get Organization's Projects (Authentication Based)
+- [x] Organization Member Basic Operations (~~Add~~, ~~Find~~, ~~Remove~~) # [TESTED]
+- [x] Organization Basic Operations (~~Create~~, ~~Find~~, ~~Update~~, ~~Delete~~) # [TESTED] (Need to create query)
 
 #### Projects
-- [x] Create Projects
-- [x] Delete Projects
-- [ ] Assign Org Member to Project
-- [ ] Update information
+- [x] Project Assignees Operations (Add, Remove)
+- [x] Projects Basic Operations (~~Create~~, ~~Find~~, ~~Update~~, ~~Delete~~)
 
 #### Teams
 Should remove teams and assign members to projects directly

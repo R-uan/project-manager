@@ -33,7 +33,6 @@ class OrganizationModelsTest(TestCase):
             title="Silly Project", organization=self.organization
         )
 
-
     def test_query_organization_projects(self):
         projects = self.organization.projects.all()
         self.assertEqual(len(projects), 1)
@@ -112,40 +111,116 @@ class OrganizationViewsTest(APITestCase):
         self.assertEqual(len(response.data), 1)
 
     def test_get_organizations_members(self):
-        response = self.authenticatedClient.get(reverse("memberManagement", kwargs={"org_pk": self.organization.id}))
+        response = self.authenticatedClient.get(reverse("memberManagement", kwargs={"organization_pk": self.organization.id}))
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 2)
 
     def test_get_private_organization_members(self):
-        response = self.authenticatedClientTwo.get(reverse("memberManagement", kwargs={"org_pk": self.organization.id}))
+        response = self.authenticatedClientTwo.get(reverse("memberManagement", kwargs={"organization_pk": self.organization.id}))
         self.assertEqual(response.status_code, 403)
 
     def test_get_unauthorized_organization_members(self):
-        response = self.unauthenticatedClient.get(reverse("memberManagement", kwargs={"org_pk": self.organization.id}))
+        response = self.unauthenticatedClient.get(reverse("memberManagement", kwargs={"organization_pk": self.organization.id}))
         self.assertEqual(response.status_code, 401)
 
     def test_post_member(self):
         payload = {"member_pk": self.userTwo.id, "role": "member"}
-        response = self.authenticatedClient.post(reverse("memberManagement", kwargs={"org_pk": self.organization.id}), payload)
+        response = self.authenticatedClient.post(reverse("memberManagement", kwargs={"organization_pk": self.organization.id}), payload)
         self.assertEqual(response.status_code, 200)
 
     def test_unauthorized_delete_member(self):
-        response = self.unauthenticatedClient.delete(reverse("memberManagementId", kwargs={'org_pk': self.organization.id, 'member_pk': self.userTwo.id}))
+        response = self.unauthenticatedClient.delete(reverse("memberManagementId", kwargs={'organization_pk': self.organization.id, 'member_pk': self.userTwo.id}))
         self.assertEqual(response.status_code, 401)
 
     def test_delete_member(self):
-        response = self.authenticatedClient.delete(reverse("memberManagementId", kwargs={'org_pk': self.organization.id, 'member_pk': self.userThree.id}))
+        response = self.authenticatedClient.delete(reverse("memberManagementId", kwargs={'organization_pk': self.organization.id, 'member_pk': self.userThree.id}))
         self.assertEqual(response.status_code, 200)
 
     def test_member_delete_member(self):
-        response = self.authenticatedClientTwo.delete(reverse("memberManagementId", kwargs={'org_pk': self.organization.id, 'member_pk': self.user.id}))
+        response = self.authenticatedClientTwo.delete(reverse("memberManagementId", kwargs={'organization_pk': self.organization.id, 'member_pk': self.user.id}))
         self.assertEqual(response.status_code, 403)
 
     def test_get_projects(self):
-        response = self.authenticatedClient.get(reverse("projectManagement", kwargs={"org_pk": self.organization.id}))
+        response = self.authenticatedClient.get(reverse("projectManagement", kwargs={"organization_pk": self.organization.id}))
         self.assertEqual(response.status_code, 200)
 
     def test_get_project_by_id(self):
-        response = self.authenticatedClient.get(reverse("projectManagementId", kwargs={"org_pk": self.organization.id, "project_pk": self.project.id}))
+        response = self.authenticatedClient.get(reverse("projectManagementId", kwargs={"organization_pk": self.organization.id, "project_pk": self.project.id}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_update_project_not_owner(self):
+        payload = {"name": "New Test Name"}
+        response = self.authenticatedClientTwo.patch(
+            reverse("organizationViewId", kwargs={"organization_pk": self.organization.id}), payload)
+        self.assertEqual(response.status_code, 403)
+
+    def test_update_project(self):
+        payload = {"name": "New Test Name"}
+        response = self.authenticatedClient.patch(
+            reverse("organizationViewId", kwargs={"organization_pk": self.organization.id}), payload)
+        self.assertEqual(response.status_code, 200)
+
+
+class OrganizationMemberManagementViewTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="me@gmail.com",
+            username="User",
+            password="Secr#t",
+            first_name="Test",
+            last_name="User",
+        )
+
+        self.organization = Organization.objects.create(
+            name="Test Organization",
+            owner=self.user,
+            email="org@gmail.com",
+            private=True,
+        )
+
+        self.orgMember = OrganizationMember.objects.create(
+            organization=self.organization,
+            member=self.user,
+            role="owner",
+        )
+
+        self.orgMemberTwo = OrganizationMember.objects.create(
+            organization=self.organization,
+            member=User.objects.create_user(email="me2@gmail.com",
+                                            username="User2",
+                                            password="Secr#t",
+                                            first_name="Test2",
+                                            last_name="User2"),
+            role="member"
+        )
+
+        self.newMember = User.objects.create_user(email="me2@gmail.com",
+                                                  username="Org Member",
+                                                  password="Secr#t",
+                                                  first_name="Member'of",
+                                                  last_name="Org")
+
+        self.unauthenticatedClient = APIClient()
+        self.authenticatedClient = APIClient()
+        self.authenticatedClient.force_authenticate(user=self.user)
+
+    def test_post_org_member(self):
+        payload = {"member_pk": self.newMember.id}
+        response = self.authenticatedClient.post(
+            reverse("memberManagement", kwargs={"organization_pk": self.organization.id}), payload)
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_members(self):
+        response = self.authenticatedClient.get(reverse("memberManagement", kwargs={"organization_pk": self.organization.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.data, list)
+
+    def test_delete_member(self):
+        response = self.authenticatedClient.delete(
+            reverse("memberManagementId", kwargs={
+                "organization_pk": self.organization.id,
+                "member_pk": self.orgMemberTwo.id
+            })
+        )
         self.assertEqual(response.status_code, 200)

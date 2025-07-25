@@ -1,3 +1,4 @@
+from django.core.exceptions import BadRequest
 from django.db.models import Q, ObjectDoesNotExist
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
@@ -10,14 +11,15 @@ from organizations.serializers import (
     OrganizationAddMember,
     OrganizationCreationRequest,
     OrganizationMemberSerializer,
-    OrganizationSerializer,
+    OrganizationSerializer, OrganizationUpdateRequest,
 )
 from projects.serializers import ProjectSerializer
 
 
 # api/organizations
-# api/organizations/<int:org_pk>
-class OrganizationView(viewsets.ViewSet):
+# api/organizations/<int:organization_pk>
+class OrganizationManagementView(viewsets.ViewSet):
+    # [TESTED]
     def get(self, request: Request, organization_id=None):
         if not organization_id:
             if request.user.is_authenticated:
@@ -41,6 +43,7 @@ class OrganizationView(viewsets.ViewSet):
             serializer = OrganizationSerializer(organization)
             return Response(serializer.data)
 
+    # [TESTED]
     def post(self, request: Request):
         if not request.user.is_authenticated:
             raise PermissionDenied({"error": "You need to be authenticated"})
@@ -62,12 +65,43 @@ class OrganizationView(viewsets.ViewSet):
             {"message": "Organization created", "organizationId": organization.id}
         )
 
-    def delete(self, request: Request, org_pk):
+    # [TESTED]
+    def update(self, request: Request, organization_pk):
+        if not request.user.is_authenticated:
+            raise NotAuthenticated({"error": "You need to be authenticated"})
+
+        serialize = OrganizationUpdateRequest(data=request.data)
+        if not serialize.is_valid(): raise BadRequest(serialize.errors)
+        data = serialize.validated_data
+
+        try:
+            org = Organization.objects.get(id=organization_pk)
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Organization was not found"})
+
+        if org.owner != request.user:
+            raise PermissionDenied({"error": "Only the owner can update the organization"})
+
+        if data["name"]:
+            org.name = data["name"]
+        if data["private"]:
+            org.private = data["private"]
+        if data["website"]:
+            org.private = data["website"]
+        if data["linkedin"]:
+            org.website = data["linkedin"]
+        if data["email"]:
+            org.email = data["email"]
+
+        return Response({"message": "Organization information updated"})
+
+    # [TESTED]
+    def delete(self, request: Request, organization_pk):
         if not request.user.is_authenticated:
             raise NotAuthenticated({"error": "You need to be authenticated"})
 
         try:
-            org = Organization.objects.get(id=org_pk)
+            org = Organization.objects.get(id=organization_pk)
         except ObjectDoesNotExist:
             raise NotFound({"error": "Organization was not found"})
 
@@ -77,14 +111,15 @@ class OrganizationView(viewsets.ViewSet):
         org.delete()
         return Response({"message": "The organization was deleted"})
 
-# api/organizations/<int:org_pk>/members
-# api/organizations/<int:org_pk>/members/<int:member_pk>
+
+# api/organizations/<int:organization_pk>/members
+# api/organizations/<int:organization_pk>/members/<int:member_pk>
 class OrganizationMemberManagementView(viewsets.ViewSet):
     permission_classes = []
 
-    def members(self, request: Request, org_pk):
+    def get(self, request: Request, organization_pk):
         try:
-            org = Organization.objects.get(id=org_pk)
+            org = Organization.objects.get(id=organization_pk)
         except ObjectDoesNotExist:
             raise NotFound({'error': 'Organization was not found'})
 
@@ -103,7 +138,7 @@ class OrganizationMemberManagementView(viewsets.ViewSet):
         serializer = OrganizationMemberSerializer(members, many=True)
         return Response(serializer.data)
 
-    def create(self, request: Request, org_pk):
+    def post(self, request: Request, organization_pk):
         if not request.user.is_authenticated:
             raise NotAuthenticated()
 
@@ -115,7 +150,7 @@ class OrganizationMemberManagementView(viewsets.ViewSet):
             return Response({"error": "Invalid role assignment"}, 400)
 
         try:
-            org = Organization.objects.get(id=org_pk)
+            org = Organization.objects.get(id=organization_pk)
         except ObjectDoesNotExist:
             raise NotFound({'error': 'Organization was not found'})
 
@@ -143,12 +178,12 @@ class OrganizationMemberManagementView(viewsets.ViewSet):
 
         return Response({'message': 'Member added'})
 
-    def destroy(self, request: Request, org_pk, member_pk):
+    def delete(self, request: Request, organization_pk, member_pk):
         if not request.user.is_authenticated:
             raise NotAuthenticated()
 
         try:
-            org = Organization.objects.get(id=org_pk)
+            org = Organization.objects.get(id=organization_pk)
         except ObjectDoesNotExist:
             raise NotFound({'error': 'Organization was not found'})
 
@@ -169,14 +204,15 @@ class OrganizationMemberManagementView(viewsets.ViewSet):
         member.delete()
         return Response({'message': 'Member was removed from the organization'})
 
-# api/organizations/<int:org_pk>/projects
-# api/organizations/<int:org_pk>/projects/<int:project_pk>
+
+# api/organizations/<int:organization_pk>/projects
+# api/organizations/<int:organization_pk>/projects/<int:project_pk>
 class OrganizationProjectManagementView(viewsets.ViewSet):
-    def find(self, request: Request, org_pk, project_pk=None):
+    def get(self, request: Request, organization_pk, project_pk=None):
         authenticated = request.user.is_authenticated
 
         try:
-            org = Organization.objects.get(id=org_pk)
+            org = Organization.objects.get(id=organization_pk)
         except ObjectDoesNotExist:
             raise NotFound({"error": "Organization not found"})
 

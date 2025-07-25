@@ -7,6 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from organizations.models import Organization
+from organizations.serializers import OrganizationMemberSerializer
 from projects.models import Project, ProjectAssignment
 from projects.serializers import NewProjectSerializer, ProjectSerializer, UpdateProjectSerializer, AssignProjectMember
 
@@ -116,9 +117,40 @@ class ProjectManagerView(viewsets.ViewSet):
         project.save()
         return Response({"message": f"Project {project.id} updated"})
 
+
 class ProjectAssigneesView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
-    def assign_member(self, request: Request, project_pk):
+
+    def find(self, request: Request, project_pk, assignee_pk=None):
+        try:
+            project = Project.objects.get(id=project_pk)
+        except ObjectDoesNotExist:
+            raise NotFound({"error": "Project was not found"})
+
+        if project.private:
+            if not request.user.is_authenticated:
+                raise NotAuthenticated({"error": "Authentication needed"})
+            try:
+                org_member = project.organization.members.get(member=request.user)
+            except ObjectDoesNotExist:
+                raise PermissionDenied({"error": "You can't see this"})
+            if project.secret and not project.assignees.filter(member=request.user).exists():
+                raise PermissionDenied({"error": "You can't see this"})
+
+        if assignee_pk:
+            try:
+                assignee = project.assignees.get(id=assignee_pk)
+            except ObjectDoesNotExist:
+                raise NotFound({"error": "Assigned member not found"})
+
+            serialize = OrganizationMemberSerializer(data=assignee)
+            return Response(serialize.data)
+
+        assignees = project.assignees.all()
+        serialize = OrganizationMemberSerializer(data=assignees)
+        return Response(serialize.data)
+
+    def add(self, request: Request, project_pk):
         serialize = AssignProjectMember(data=request.data)
         if not serialize.is_valid(): raise BadRequest(serialize.errors)
         body = serialize.validated_data
@@ -148,8 +180,7 @@ class ProjectAssigneesView(viewsets.ViewSet):
 
         return Response({"message": "Member assigned to project"})
 
-
-    def unassign_member(self, request: Request, project_pk):
+    def remove(self, request: Request, project_pk):
         serialize = AssignProjectMember(data=request.data)
         if not serialize.is_valid(): raise BadRequest(serialize.errors)
         body = serialize.validated_data
