@@ -22,9 +22,9 @@ The goal of this specific repository is to get used to Python's syntax as well a
 
 #### Accounts
 - [x] Create Account
-- [ ] Get Account Details
+- [x] Get Account Details
 - [x] Get (Owned) Organizations
-- [ ] Update Details (email, name, GitHub, password)
+- [x] Update Details (email, name, GitHub, password)
 
 #### Organizations
 - [x] Projects: Get Organization's Projects (Authentication Based)
@@ -32,7 +32,7 @@ The goal of this specific repository is to get used to Python's syntax as well a
 - [x] Organization Basic Operations (~~Create~~, ~~Find~~, ~~Update~~, ~~Delete~~) # [TESTED] (Need to create query)
 
 #### Projects
-- [x] Project Assignees Operations (Add, Remove)
+- [x] Project Assignees Operations (~~Add~~, ~~Remove~~)
 - [x] Projects Basic Operations (~~Create~~, ~~Find~~, ~~Update~~, ~~Delete~~)
 
 #### Teams

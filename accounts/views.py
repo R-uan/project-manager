@@ -6,13 +6,20 @@ from rest_framework.decorators import permission_classes, api_view
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
 from organizations.serializers import OrganizationSerializer
-from .serializers import AccountCreationSerializer
+from .serializers import AccountCreationSerializer, AccountDetailsSerializer
 from .models import User
 
 # Create your views here.
 
 
 class AccountManagement(APIView):
+    def get(self, request: Request):
+        if not request.user or not request.user.is_authenticated:
+            return Response("{ error: 'You need to be authenticated' }", status=401)
+        
+        serializer = AccountDetailsSerializer(request.user)    
+        return Response(serializer.data)
+    
     def post(self, request: Request):
         serializer = AccountCreationSerializer(data=request.data)
         if not serializer.is_valid():
